@@ -11,8 +11,15 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
         }
         return false;
     } else if input_line.contains(pattern) {
-      println!("found {}",pattern);
+        println!("found {}", pattern);
         return true;
+    } else if pattern == "\\w" {
+        for c in input_line.chars() {
+            if c.is_alphanumeric() {
+                return true;
+            }
+        }
+        return false;
     } else {
         // panic!("Unhandled pattern: {}", pattern)
         return false;
