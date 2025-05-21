@@ -14,7 +14,8 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
       println!("found {}",pattern);
         return true;
     } else {
-        panic!("Unhandled pattern: {}", pattern)
+        // panic!("Unhandled pattern: {}", pattern)
+        return false;
     }
 }
 
