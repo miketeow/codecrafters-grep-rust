@@ -10,9 +10,6 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             }
         }
         return false;
-    } else if input_line.contains(pattern) {
-        println!("found {}", pattern);
-        return true;
     } else if pattern == "\\w" {
         for c in input_line.chars() {
             if c.is_alphanumeric() {
@@ -20,6 +17,20 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             }
         }
         return false;
+    } else if pattern.starts_with("[") && pattern.ends_with("]") {
+        if pattern.len() > 2 {
+            let chars_inbrackets = &pattern[1..pattern.len() - 1];
+
+            if chars_inbrackets.is_empty() {
+                return false;
+            }
+
+            return input_line.contains(chars_inbrackets);
+        } else {
+            return false;
+        }
+    } else if pattern.chars().count() == 1 {
+        return input_line.contains(pattern);
     } else {
         // panic!("Unhandled pattern: {}", pattern)
         return false;
