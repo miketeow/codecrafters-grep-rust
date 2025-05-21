@@ -25,12 +25,13 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
                 if negative_chars.is_empty() {
                     return false;
                 }
+
                 for c in input_line.chars() {
-                    if negative_chars.contains(c) {
-                        return false;
+                    if !negative_chars.contains(c) {
+                        return true;
                     }
                 }
-                return true;
+                return false;
             }
         }
         if pattern.len() > 2 {
@@ -73,8 +74,10 @@ fn main() {
 
     // Uncomment this block to pass the first stage
     if match_pattern(&input_line, &pattern) {
+        println!("exit code 0");
         process::exit(0)
     } else {
+        println!("exit code 1");
         process::exit(1)
     }
 }
