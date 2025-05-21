@@ -24,8 +24,12 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
             if chars_inbrackets.is_empty() {
                 return false;
             }
-
-            return input_line.contains(chars_inbrackets);
+            for c in input_line.chars() {
+                if chars_inbrackets.contains(c) {
+                    return true;
+                }
+            }
+            return false;
         } else {
             return false;
         }
