@@ -4,12 +4,15 @@ use std::process;
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if pattern == "\\d" {
-      for c in input_line.chars(){
-        if c.is_digit(10){
-          return true;
+        for c in input_line.chars() {
+            if c.is_digit(10) {
+                return true;
+            }
         }
-      }
-      return false;
+        return false;
+    } else if input_line.contains(pattern) {
+      println!("found {}",pattern);
+        return true;
     } else {
         panic!("Unhandled pattern: {}", pattern)
     }
