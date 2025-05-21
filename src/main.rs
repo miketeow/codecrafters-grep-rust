@@ -18,14 +18,29 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
         }
         return false;
     } else if pattern.starts_with("[") && pattern.ends_with("]") {
-        if pattern.len() > 2 {
-            let chars_inbrackets = &pattern[1..pattern.len() - 1];
+        if pattern.starts_with("[^") {
+            if pattern.len() > 3 {
+                let negative_chars = &pattern[2..pattern.len() - 1];
 
-            if chars_inbrackets.is_empty() {
+                if negative_chars.is_empty() {
+                    return false;
+                }
+                for c in input_line.chars() {
+                    if negative_chars.contains(c) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        if pattern.len() > 2 {
+            let positive_chars = &pattern[1..pattern.len() - 1];
+
+            if positive_chars.is_empty() {
                 return false;
             }
             for c in input_line.chars() {
-                if chars_inbrackets.contains(c) {
+                if positive_chars.contains(c) {
                     return true;
                 }
             }
