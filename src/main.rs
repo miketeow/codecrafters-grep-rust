@@ -106,17 +106,35 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
         }
     }
 
+    if pattern.starts_with("[") && pattern.ends_with("]"){
+
+      let input_char = input_line.chars().next().unwrap();
+      let input_char_len = input_char.len_utf8();
+
+      if pattern.starts_with("[^"){
+        let pattern_chars = pattern.chars().nth(3).unwrap();
+        let pattern_chars_len = pattern_chars.len_utf8();
+
+        if pattern_chars == input_char {
+          return false;
+        }
+
+        return match_pattern_recursive(&input_line[input_char_len..], &pattern[pattern_chars_len..]);
+      } else {
+        return match_pattern_recursive(&input_line[input_char_len..], &pattern[1..]);
+      }
+    }
     if input_line.is_empty() {
         return false;
     }
 
-    let p_chars = pattern.chars().next().unwrap();
-    let i_chars = input_line.chars().next().unwrap();
-    let p_chars_len = p_chars.len_utf8();
-    let i_chars_len = i_chars.len_utf8();
+    let pattern_chars = pattern.chars().next().unwrap();
+    let input_chars = input_line.chars().next().unwrap();
+    let pattern_chars_len = pattern_chars.len_utf8();
+    let input_chars_len = input_chars.len_utf8();
 
-    if p_chars == i_chars {
-        return match_pattern_recursive(&input_line[i_chars_len..], &pattern[p_chars_len..]);
+    if pattern_chars == input_chars {
+        return match_pattern_recursive(&input_line[input_chars_len..], &pattern[pattern_chars_len..]);
     }
     return false;
 }
