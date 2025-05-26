@@ -2,61 +2,6 @@ use std::env;
 use std::io;
 use std::process;
 
-// fn match_pattern(input_line: &str, pattern: &str) -> bool {
-//     if pattern == "\\d" {
-//         for c in input_line.chars() {
-//             if c.is_digit(10) {
-//                 return true;
-//             }
-//         }
-//         return false;
-//     } else if pattern == "\\w" {
-//         for c in input_line.chars() {
-//             if c.is_alphanumeric() {
-//                 return true;
-//             }
-//         }
-//         return false;
-//     } else if pattern.starts_with("[") && pattern.ends_with("]") {
-//         if pattern.starts_with("[^") {
-//             if pattern.len() > 3 {
-//                 let negative_chars = &pattern[2..pattern.len() - 1];
-
-//                 if negative_chars.is_empty() {
-//                     return false;
-//                 }
-
-//                 for c in input_line.chars() {
-//                     if !negative_chars.contains(c) {
-//                         return true;
-//                     }
-//                 }
-//                 return false;
-//             }
-//         }
-//         if pattern.len() > 2 {
-//             let positive_chars = &pattern[1..pattern.len() - 1];
-
-//             if positive_chars.is_empty() {
-//                 return false;
-//             }
-//             for c in input_line.chars() {
-//                 if positive_chars.contains(c) {
-//                     return true;
-//                 }
-//             }
-//             return false;
-//         } else {
-//             return false;
-//         }
-//     } else if pattern.chars().count() == 1 {
-//         return input_line.contains(pattern);
-//     } else {
-//         // panic!("Unhandled pattern: {}", pattern)
-//         return false;
-//     }
-// }
-
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if pattern.starts_with("^") {
         return match_pattern_recursive(input_line, &pattern[1..]);
@@ -106,22 +51,40 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
         }
     }
 
-    if pattern.starts_with("[") && pattern.ends_with("]"){
+    if pattern.starts_with("["){
+      if let Some(end_bracket_idx) = pattern.find("]") {
+        let group_classes = &pattern[1..end_bracket_idx];
+        let other_pattern = &pattern[end_bracket_idx + 1..];
 
-      let input_char = input_line.chars().next().unwrap();
-      let input_char_len = input_char.len_utf8();
-
-      if pattern.starts_with("[^"){
-        let pattern_chars = pattern.chars().nth(3).unwrap();
-        let pattern_chars_len = pattern_chars.len_utf8();
-
-        if pattern_chars == input_char {
+        if input_line.is_empty() {
           return false;
         }
 
-        return match_pattern_recursive(&input_line[input_char_len..], &pattern[pattern_chars_len..]);
+        let current_char = input_line.chars().next().unwrap();
+        // handle negative group
+        let is_negative_group = group_classes.starts_with("^");
+        let chars_in_group = if is_negative_group {
+           &group_classes[1..]
+        } else {
+           group_classes
+        };
+
+        let matched_chars = chars_in_group.contains(current_char);
+
+        let group_matched_chars = if is_negative_group {
+          !matched_chars
+        } else {
+          matched_chars
+        };
+
+        if group_matched_chars {
+          return match_pattern_recursive(&input_line[current_char.len_utf8()..], other_pattern);
+        } else {
+          return false;
+        }
       } else {
-        return match_pattern_recursive(&input_line[input_char_len..], &pattern[1..]);
+        // Unclosed bracket
+        return false;
       }
     }
     if input_line.is_empty() {
@@ -134,7 +97,10 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
     let input_chars_len = input_chars.len_utf8();
 
     if pattern_chars == input_chars {
-        return match_pattern_recursive(&input_line[input_chars_len..], &pattern[pattern_chars_len..]);
+        return match_pattern_recursive(
+            &input_line[input_chars_len..],
+            &pattern[pattern_chars_len..],
+        );
     }
     return false;
 }
