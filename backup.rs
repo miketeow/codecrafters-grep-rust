@@ -2,61 +2,6 @@ use std::env;
 use std::io;
 use std::process;
 
-// fn match_pattern(input_line: &str, pattern: &str) -> bool {
-//     if pattern == "\\d" {
-//         for c in input_line.chars() {
-//             if c.is_digit(10) {
-//                 return true;
-//             }
-//         }
-//         return false;
-//     } else if pattern == "\\w" {
-//         for c in input_line.chars() {
-//             if c.is_alphanumeric() {
-//                 return true;
-//             }
-//         }
-//         return false;
-//     } else if pattern.starts_with("[") && pattern.ends_with("]") {
-//         if pattern.starts_with("[^") {
-//             if pattern.len() > 3 {
-//                 let negative_chars = &pattern[2..pattern.len() - 1];
-
-//                 if negative_chars.is_empty() {
-//                     return false;
-//                 }
-
-//                 for c in input_line.chars() {
-//                     if !negative_chars.contains(c) {
-//                         return true;
-//                     }
-//                 }
-//                 return false;
-//             }
-//         }
-//         if pattern.len() > 2 {
-//             let positive_chars = &pattern[1..pattern.len() - 1];
-
-//             if positive_chars.is_empty() {
-//                 return false;
-//             }
-//             for c in input_line.chars() {
-//                 if positive_chars.contains(c) {
-//                     return true;
-//                 }
-//             }
-//             return false;
-//         } else {
-//             return false;
-//         }
-//     } else if pattern.chars().count() == 1 {
-//         return input_line.contains(pattern);
-//     } else {
-//         // panic!("Unhandled pattern: {}", pattern)
-//         return false;
-//     }
-// }
-
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if pattern.starts_with("^") {
         return match_pattern_recursive(input_line, &pattern[1..]);
@@ -76,8 +21,13 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
     }
 
     if pattern == "$" {
+      println!("The input line now is: {}", input_line);
         return input_line.is_empty();
     };
+
+    if input_line.is_empty() {
+        return false;
+    }
 
     if pattern.starts_with("\\") {
         if pattern.len() < 2 {
@@ -106,41 +56,42 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
         }
     }
 
-    if pattern.starts_with("[") && pattern.ends_with("]") {
-        if input_line.is_empty() {
-            return false;
-        }
-
-        println!("input line is {}",input_line);
-        println!("pattern is {}",pattern);
-
-        let input_char = input_line.chars().next().unwrap();
-        let input_char_len = input_char.len_utf8();
-
-        let pattern_chars = pattern.chars().next().unwrap();
-        let pattern_chars_len = pattern_chars.len_utf8();
-
-        println!("after setting pattern char, it is {}",pattern_chars);
-        println!("pattern char len is {}", pattern_chars_len);
-        if pattern.starts_with("^") {
-            println!("Come in after detecing ^");
-            println!("pattern char is {}",pattern_chars);
-            println!("input char is {}", input_char);
-            if pattern_chars == input_char {
-                return false;
-            }
-
-            return match_pattern_recursive(
-                &input_line[input_char_len..],
-                &pattern[pattern_chars_len..],
-            );
-        } else {
-          println!("testing here");
-            return match_pattern_recursive(&input_line[input_char_len..], &pattern[pattern_chars_len..]);
-        }
+    if pattern.starts_with("+"){
+      let input_char = input_line.chars().next().unwrap();
+      println!("input_char is {}", input_char);
     }
-    if input_line.is_empty() {
+
+    if pattern.starts_with("["){
+      if let Some(end_bracket_idx) = pattern.find("]") {
+        let group_classes = &pattern[1..end_bracket_idx];
+        let other_pattern = &pattern[end_bracket_idx + 1..];
+
+        let current_char = input_line.chars().next().unwrap();
+        // handle negative group
+        let is_negative_group = group_classes.starts_with("^");
+        let chars_in_group = if is_negative_group {
+           &group_classes[1..]
+        } else {
+           group_classes
+        };
+
+        let matched_chars = chars_in_group.contains(current_char);
+
+        let group_matched_chars = if is_negative_group {
+          !matched_chars
+        } else {
+          matched_chars
+        };
+
+        if group_matched_chars {
+          return match_pattern_recursive(&input_line[current_char.len_utf8()..], other_pattern);
+        } else {
+          return false;
+        }
+      } else {
+        // Unclosed bracket
         return false;
+      }
     }
 
     let pattern_chars = pattern.chars().next().unwrap();
@@ -157,11 +108,80 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
     return false;
 }
 
+// helper function
+
+fn match_leading_token<'a>(pattern_token_segment: &str, input_line: &'a str) -> Option<&'a str> {
+  if pattern_token_segment.starts_with("\\") {
+    if pattern_token_segment.len() < 2 || input_line.is_empty() {
+      return None
+    }
+
+    let class_char = pattern_token_segment.chars().nth(1).unwrap();
+    let input_char = input_line.chars().next().unwrap();
+    let matched_class = match class_char {
+      'd' => input_char.is_ascii_digit(),
+      'w' => input_char.is_ascii_alphanumeric() || input_char == '_',
+      _ => false,
+    };
+    if matched_class {
+      return Some(&input_line[input_char.len_utf8()..]);
+    }
+  } else if pattern_token_segment.starts_with("[") {
+    if let Some(end_bracket_idx) = pattern_token_segment.find(']') {
+      if end_bracket_idx + 1 != pattern_token_segment.len() {
+        return None;
+      }
+
+      let group_classes = &pattern_token_segment[1..end_bracket_idx];
+      if input_line.is_empty() {
+        return None;
+      }
+      let current_char = input_line.chars().next().unwrap();
+      let is_negative_group = group_classes.starts_with('^');
+      let chars_in_group = if is_negative_group {
+        &group_classes[1..]
+      } else {group_classes};
+
+      // Guard against empty char group like "[]" ot "[^]"
+      if chars_in_group.is_empty() && pattern_token_segment.len() > 2 {
+
+      }
+
+      let matched_char_flag = chars_in_group.contains(current_char);
+      let group_matches_current_char = if is_negative_group {!matched_char_flag} else {matched_char_flag};
+
+      if group_matches_current_char {
+        return Some(&input_line[current_char.len_utf8()..]);
+      }
+    }
+  } else if !pattern_token_segment.is_empty() && !input_line.is_empty() {
+    let p_char = pattern_token_segment.chars().next().unwrap();
+    let i_char = input_line.chars().next().unwrap();
+
+    if p_char == i_char {
+      return Some(&input_line[i_char.len_utf8()..]);
+    }
+  }
+  None
+}
+
+fn handle_star_quantifier<'a>(token_x_definition: &str, pattern_after_quantifier: &str, current_input: &'a str) -> bool {
+  // Option 1, X is matched zero time, proceed to match the rest of the pattern.
+  if match_pattern_recursive(current_input, pattern_after_quantifier){
+    return true;
+  }
+
+  // Option 2, X is matched one or more times, then recurse.
+  if let Some(input_after_one_more_x) = match_leading_token(token_x_definition, current_input){
+    // If X is matched, recursively call this function for the * part
+    if handle_star_quantifier(token_x_definition, pattern_after_quantifier, input_after_one_more_x){
+      return true;
+    }
+  }
+  false
+}
 // Usage: echo <input_text> | your_program.sh -E <pattern>
 fn main() {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    // eprintln!("Logs from your program will appear here!");
-
     if env::args().nth(1).unwrap() != "-E" {
         println!("Expected first argument to be '-E'");
         process::exit(1);
@@ -172,7 +192,6 @@ fn main() {
 
     io::stdin().read_line(&mut input_line).unwrap();
 
-    // Uncomment this block to pass the first stage
     if match_pattern(&input_line, &pattern) {
         println!("pattern matched");
         process::exit(0)
