@@ -6,10 +6,14 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if pattern.starts_with("^") {
         return match_pattern_recursive(input_line, &pattern[1..]);
     } else {
-        for i in 0..=input_line.len() {
+        for (i,_) in input_line.char_indices() {
             if match_pattern_recursive(&input_line[i..], pattern) {
                 return true;
             }
+        }
+
+        if match_pattern_recursive("", pattern){
+          return true;
         }
         return false;
     }
@@ -45,7 +49,7 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
 
         let matched_class = match class_char {
             'd' => input_char.is_ascii_digit(),
-            'w' => input_char.is_ascii_alphanumeric(),
+            'w' => input_char.is_ascii_alphanumeric() || input_char == '_',
             _ => return false,
         };
 
@@ -56,7 +60,7 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
         }
     }
 
-    if pattern.len() > 2 && pattern.chars().nth(1) == Some('+'){
+    if pattern.len() >= 2 && pattern.chars().nth(1) == Some('+'){
       let token_chars = pattern.chars().next().unwrap(); // The X from X+
       let pattern_after_plus = &pattern[2..]; // pattern after X+
 
