@@ -59,7 +59,7 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
             return false;
         }
     }
-
+    // input: aaabc, pattern a+bc
     if pattern.len() >= 2 && pattern.chars().nth(1) == Some('+'){
       let token_chars = pattern.chars().next().unwrap(); // The X from X+
       let pattern_after_plus = &pattern[2..]; // pattern after X+
@@ -75,6 +75,24 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
       return match_pattern_recursive(input_after_one, pattern_after_plus) || match_pattern_recursive(input_after_one, pattern);
     }
 
+    // input: dogs || dog , pattern: dogs? , zero or one
+    // input: appdle || apple , pattern: appd?le , zero or one
+    if pattern.len() >= 2 && pattern.chars().nth(1) == Some('?'){
+      let token_chars = pattern.chars().next().unwrap(); // The X from X?
+      let pattern_after_question = &pattern[2..]; // pattern after X?
+
+      //zero match
+      let zero_match = match_pattern_recursive(input_line, pattern_after_question);
+
+      let one_match = if input_line.starts_with(token_chars) {
+        let input_after_one = &input_line[token_chars.len_utf8()..];
+        match_pattern_recursive(input_after_one, pattern_after_question)
+      } else {
+        false
+      };
+
+      return zero_match || one_match;
+    }
     if pattern.starts_with("["){
       if let Some(end_bracket_idx) = pattern.find("]") {
         let group_classes = &pattern[1..end_bracket_idx];
@@ -107,8 +125,6 @@ fn match_pattern_recursive(input_line: &str, pattern: &str) -> bool {
         return false;
       }
     }
-
-    println!("Check if reach normal compare here");
 
     let pattern_chars = pattern.chars().next().unwrap();
     let input_chars = input_line.chars().next().unwrap();
